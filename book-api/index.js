@@ -32,7 +32,7 @@ app.use(express.json())
 
 
 
-app.post("/auth/signin", (req, res) => {
+app.post("/api/auth/login", (req, res) => {
     try{
         const {username, password} = req.body
 
@@ -58,7 +58,7 @@ app.post("/auth/signin", (req, res) => {
 
 
 
-app.post("/auth/signup", (req, res) => {
+app.post("/api/auth/register", (req, res) => {
     try {
         const { username, password, email } = req.body
         if (!username || !password) {
@@ -95,9 +95,113 @@ app.post("/auth/signup", (req, res) => {
 })
 
 
+app.get("/api/auth/profile", auth, (req, res) => {
+  try {
+    const { id } = req.user;
+    const profile = db.prepare("SELECT * FROM users WHERE id = ?").get(id)
+    
+    if (!profile) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    return res.status(200).json({ profile })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ error: "Failed to fetch profile" })
+  }
+});
+
+// app.post("/api/books", auth, (req, res) =>{
+//     console.log(req.body)
+//     try {
+//         const { title, author, year, genre, description } = req.body
+
+//         if (!title || !title.trim()) {
+//             return res.status(400).json({ error: "Нужно название" })
+//         }
+//         if (!author || !author.trim()) {
+//             return res.status(400).json({ error: "Нужно название" })
+//         }
+//         if (!year || !year.trim()) {
+//             return res.status(400).json({ error: "Нужно название" })
+//         }
+//         if (!genre || !genre.trim()) {
+//             return res.status(400).json({ error: "Нужно название" })
+//         }
+//         if (!description || description.trim()) {
+//             return res.status(400).json({ error: "Нужно название" })
+//         }
+
+//         const info = db.prepare(`INSERT INTO books (
+//         title,
+//         author, 
+//         year, 
+//         genre, 
+//         description) 
+//         VALUES (?, ?, ?, ?, ?)`)
+//             .run(title.trim(),
+//                 author.trim(),
+//                 year,
+//                 genre.trim(),
+//                 description.trim())
+
+//         const newItem = db.prepare("SELECT * FROM books WHERE id = ?").get(info.lastInsertRowid)
+//         return res.status(201).json(newItem)
+//     } catch (err) {
+//         console.error(err)
+//         return res.status(500).json({ error: "Failed to fetch" })
+//     }
+// })
 
 
+app.post("/api/books", auth, (req, res) => {
+  console.log(req.body);
 
+  try {
+    const { title, author, year, genre, description } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: "Нужно название книги" });
+    }
+    if (!author || !author.trim()) {
+      return res.status(400).json({ error: "Нужно указать автора" });
+    }
+
+    const yearNum = parseInt(year, 10);
+    if (!year || isNaN(yearNum) || yearNum <= 0) {
+      return res.status(400).json({ error: "Год должен быть положительным числом" });
+    }
+
+    if (!genre || !genre.trim()) {
+      return res.status(400).json({ error: "Нужно указать жанр" });
+    }
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: "Нужно описание книги" });
+    }
+
+    const info = db
+      .prepare(`
+        INSERT INTO books (title, author, year, genre, description)
+        VALUES (?, ?, ?, ?, ?)
+      `)
+      .run(
+        title.trim(),
+        author.trim(),
+        yearNum,
+        genre.trim(),
+        description.trim()
+      );
+
+    const newItem = db
+      .prepare("SELECT * FROM books WHERE id = ?")
+      .get(info.lastInsertRowid);
+
+    return res.status(201).json(newItem);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to create book" });
+  }
+});
 
 
 
