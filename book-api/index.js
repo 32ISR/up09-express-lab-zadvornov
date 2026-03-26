@@ -60,7 +60,7 @@ app.post("/api/auth/login", (req, res) => {
 
 app.post("/api/auth/register", (req, res) => {
     try {
-        const { username, password, email } = req.body
+        const { username, password, email, role } = req.body
         if (!username || !password) {
             return res.status(400).json({ error: "error" })
         }
@@ -79,9 +79,9 @@ app.post("/api/auth/register", (req, res) => {
 
         const salt = bcr.genSaltSync(10)
         const hash = bcr.hashSync(password, salt)
-        const role = "user"
+        // const role = "user"
 
-        const info = db.prepare(`INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)`).run(username.trim(), hash, email.trim(), role)
+        const info = db.prepare(`INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)`).run(username.trim(), hash, email.trim(), role.trim())
 
         const newUser = db.prepare(`SELECT * FROM users WHERE id =?`).get(info.lastInsertRowid)
 
@@ -111,48 +111,19 @@ app.get("/api/auth/profile", auth, (req, res) => {
   }
 });
 
-// app.post("/api/books", auth, (req, res) =>{
-//     console.log(req.body)
-//     try {
-//         const { title, author, year, genre, description } = req.body
+app.get("/api/auth/users", (req, res)=> {
+  try{
+    const users = db.prepare("SELECT * FROM users").all()
+    return res.status(200).json(users)
+  }catch(err){
+    console.log(err)
+    return res.status(500).json({error: "Failed to fetch"})
+  }
+})
 
-//         if (!title || !title.trim()) {
-//             return res.status(400).json({ error: "Нужно название" })
-//         }
-//         if (!author || !author.trim()) {
-//             return res.status(400).json({ error: "Нужно название" })
-//         }
-//         if (!year || !year.trim()) {
-//             return res.status(400).json({ error: "Нужно название" })
-//         }
-//         if (!genre || !genre.trim()) {
-//             return res.status(400).json({ error: "Нужно название" })
-//         }
-//         if (!description || description.trim()) {
-//             return res.status(400).json({ error: "Нужно название" })
-//         }
 
-//         const info = db.prepare(`INSERT INTO books (
-//         title,
-//         author, 
-//         year, 
-//         genre, 
-//         description) 
-//         VALUES (?, ?, ?, ?, ?)`)
-//             .run(title.trim(),
-//                 author.trim(),
-//                 year,
-//                 genre.trim(),
-//                 description.trim())
 
-//         const newItem = db.prepare("SELECT * FROM books WHERE id = ?").get(info.lastInsertRowid)
-//         return res.status(201).json(newItem)
-//     } catch (err) {
-//         console.error(err)
-//         return res.status(500).json({ error: "Failed to fetch" })
-//     }
-// })
-
+// BOOKS
 
 app.post("/api/books", auth, (req, res) => {
   console.log(req.body);
@@ -181,15 +152,16 @@ app.post("/api/books", auth, (req, res) => {
 
     const info = db
       .prepare(`
-        INSERT INTO books (title, author, year, genre, description)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO books (title, author, year, genre, description, createdBy)
+        VALUES (?, ?, ?, ?, ?, ?)
       `)
       .run(
         title.trim(),
         author.trim(),
         yearNum,
         genre.trim(),
-        description.trim()
+        description.trim(), 
+        req.user.id
       );
 
     const newItem = db
@@ -203,6 +175,96 @@ app.post("/api/books", auth, (req, res) => {
   }
 });
 
+app.get("/api/books", (req, res)=> {
+  try{
+    const books = db.prepare("SELECT * FROM books ORDER BY author DESC").all()
+    return res.status(200).json(books)
+  }catch(error){
+    console.log(error)
+    return res .status(500).json({error: "Failed to fetch"})
+  }
+})
+
+app.get("/api/books/:id", (req, res) => {
+    try{
+        const {id} = req.params
+        const book = db.prepare("SELECT * FROM books WHERE id = ?").get(id)
+        if(!book) {return res.status(404).json({error: "Item not found"})}
+    }catch(error){
+        console.error(error)
+        return res.status(500).json({error:"Something went wr"})
+    }
+})
+
+
+app.put("/api/books/:id", auth, (req, res) => {
+  try {
+    const {role} = req.user
+    const { id } = req.params;
+    const { title, author, year, genre, description } = req.body;
+
+     if (role == "user"){
+        return res.status(400).json({ error: "У вас недостаточно прав" });
+     }
+
+    const yearNum = parseInt(year, 10);
+    if (!title?.trim()) return res.status(400).json({ error: "Нужно название книги" });
+    if (!author?.trim()) return res.status(400).json({ error: "Нужно указать автора" });
+    if (!year || isNaN(yearNum) || yearNum <= 0) {
+      return res.status(400).json({ error: "Год должен быть положительным числом" });
+    }
+    if (!genre?.trim()) return res.status(400).json({ error: "Нужно указать жанр" });
+    if (!description?.trim()) return res.status(400).json({ error: "Нужно описание книги" });
+
+    const info = db.prepare(`
+      UPDATE books
+      SET title = ?, author = ?, year = ?, genre = ?, description = ?
+      WHERE id = ?
+    `).run(
+      title.trim(),
+      author.trim(),
+      yearNum,
+      genre.trim(),
+      description.trim(),
+      id
+    );
+
+    if (info.changes === 0) {
+      return res.status(404).json({ error: "Книга не найдена" });
+    }
+
+    const updatedItem = db.prepare("SELECT * FROM books WHERE id = ?").get(id);
+    return res.json(updatedItem);
+  } catch (err) {
+    console.error(err);
+    console.log(req.user)
+    return res.status(500).json({ error: "Failed to update book" });
+  }
+});
+
+app.delete("/api/books/:id", auth, (req, res) => {
+    try{
+        const {role} = req.user
+        const {id } = req.params
+        const book = db.prepare("SELECT * FROM books WHERE id = ?").get(id)
+
+        if (role == "user"){
+        return res.status(400).json({ error: "У вас недостаточно прав" });
+     }
+
+        if(!book) {return res.status(404).json({error: "Book not found"})}
+        
+        db.prepare("DELETE FROM books WHERE id = ?").run(id)
+        return res.status(200).json({message: "Book deleted"})
+
+    }catch(error){
+        console.error(error)
+        res.status(500).json({error:"Something went wrong"})
+    }
+})
+
+
+//REVIEWS...
 
 
 
