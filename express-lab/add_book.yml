@@ -1,0 +1,25 @@
+info:
+  name: add_book
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/api/books"
+  body:
+    type: json
+    data: |-
+      {
+      "title":"dfgdrgd",
+      "author":"ergeadfg",
+      "year":"1098",
+      "genre":"sDfSEfSD",
+      "description":"dsferfsdfewrfaedferfgaedfae4tg"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

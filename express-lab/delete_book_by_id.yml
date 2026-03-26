@@ -1,0 +1,15 @@
+info:
+  name: delete_book_by_id
+  type: http
+  seq: 14
+
+http:
+  method: DELETE
+  url: "{{base_url}}/api/books/1"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

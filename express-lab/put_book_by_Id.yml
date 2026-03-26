@@ -1,0 +1,25 @@
+info:
+  name: put_book_by_Id
+  type: http
+  seq: 12
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/books/2"
+  body:
+    type: json
+    data: |-
+      {
+      "title":"Harry Potter",
+      "author":"Rouling",
+      "year":"1998",
+      "genre":"fantastic",
+      "description":"WOW 67676"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

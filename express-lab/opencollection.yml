@@ -1,0 +1,29 @@
+opencollection: 1.0.0
+
+info:
+  name: express-lab
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywidXNlcm5hbWUiOiJhZG1pbjAyIiwiZW1haWwiOiJhZG1pbjAyQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImNyZWF0ZWRBdCI6IjIwMjYtMDMtMjYgMTE6NDE6NTkiLCJpYXQiOjE3NzQ1MjYwMzQsImV4cCI6MTc3NDYxMjQzNH0.ZCG5RXjAaIfrNiv28n4M0boPmbUx3J8iUbsz4xGkVNw
+  variables:
+    - name: base_url
+      value: https://humble-fortnight-jjv5w6wppp94cpx5r-3000.app.github.dev
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
