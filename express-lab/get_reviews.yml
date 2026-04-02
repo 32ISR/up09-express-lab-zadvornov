@@ -1,15 +1,15 @@
 info:
-  name: books_byId
+  name: get_reviews
   type: http
-  seq: 8
+  seq: 12
 
 http:
   method: GET
-  url: "{{base_url}}/api/books/?id=2"
+  url: "{{base_url}}/api/books/:id"
   params:
     - name: id
       value: "2"
-      type: query
+      type: path
   auth: inherit
 
 settings:
